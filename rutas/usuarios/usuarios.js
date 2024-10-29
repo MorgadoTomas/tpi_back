@@ -23,15 +23,14 @@ router.post('/registrar', function (req, res) {
 
 
 router.post('/login', function (req, res) {
-    const { usuario, password } = req.body; // Desestructuración para obtener usuario y contraseña del cuerpo de la solicitud
-    const sql = 'SELECT contrasena FROM Usuarios WHERE usuario = ?'; // Consulta SQL para obtener la contraseña del usuario
-
-    conexion.query(sql, [usuario], function (error, results) { // Ejecuta la consulta
-        if (error) { // Manejo de errores
-            console.log(error); // Imprime el error en la consola
-            return res.status(500).send('Ocurrió un error'); // Responde con un error 500
+    const { usuario, password } = req.body; 
+    const sql = 'SELECT contrasena FROM Usuarios WHERE usuario = ?'; 
+    conexion.query(sql, [usuario], function (error, results) { 
+        if (error) {
+            console.log(error); 
+            return res.status(500).send('Ocurrió un error'); 
         }
-        if (results.length === 0) { // Si no se encuentra el usuario
+        if (results.length === 0) { 
             return res.status(401).send('Usuario no encontrado');
         }
 
