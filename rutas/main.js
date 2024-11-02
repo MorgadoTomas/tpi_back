@@ -1,9 +1,10 @@
 const router = require('express').Router();
 const usuariosRouter = require('./usuarios/usuarios');
-const adminRouter = require ('./productos/homeadmin')
+const adminRouter = require('./productos/homeadmin')
+const homeRouter = require('./productos/home')
 
 
 router.use('/usuarios', usuariosRouter);
-router.use('/admin', adminRouter)
-
+router.use('/admin', adminRouter);
+router.use('/', homeRouter)
 module.exports = router;

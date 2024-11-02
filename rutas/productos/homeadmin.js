@@ -7,15 +7,14 @@ router.post('/homeadmin', function (req, res) {
     conexion.query(sql, [nombre, stock, precio, descrip, marca], function (error, resultado) {
         if (error) {
             console.log(error)
-            return res.send('Ocurrio un error')
+            return res.send('error en el post')
         }
         res.json({ status: 'ok' });
     })
-
 })
+
 router.get('/homeadmin', function (req, res) {
-    const { nombre } = req.query;
-    const sql = 'SELECT nombre FROM Productos WHERE nombre = ?'
+    const sql = 'SELECT * FROM Productos WHERE stock > 0'
     conexion.query(sql, [nombre], function (error, resultado) {
         if (error) {
             console.log(error)
@@ -23,14 +22,30 @@ router.get('/homeadmin', function (req, res) {
         }
         res.json({ status: 'ok' })
     })
-
 })
+
 router.put('/homeadmin', function (req, res) {
-    const { nombre, stock, precio, descrip, marca } = req.body;
-    const sql = 'UPDATE Productos'
-
+    const { id, nuevonombre, stock, precio, descripcion, marca } = req.body;
+    const sql = "UPDATE Productos SET nombre = ?, stock = ?, precio = ?, descripcion = ?, marca = ? WHERE id = ?";
+    conexion.query(sql, [nuevonombre, stock, precio, descripcion, marca, id], function (error, resultado) {
+        if (error) {
+            console.log(error)
+            return res.send('Error en el put')
+        }
+        res.json({ status: 'ok' })
+    })
 })
+
 router.delete('/homeadmin', function (req, res) {
-
+    const { id } = req.query;
+    const sql = "DELETE FROM Productos WHERE id = ?"
+    conexion.query(sql, [id], function (error, resultado) {
+        if (error) {
+            console.log(error)
+            return res.send('Error en el delete')
+        }
+        res.json({ status: 'ok' })
+    })
 })
+
 module.exports = router;
