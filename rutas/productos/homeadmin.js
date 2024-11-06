@@ -1,7 +1,19 @@
 const router = require('express').Router();
 const { conexion } = require('../../conexion');
+const multer = require('multer');
 
-router.post('/homeadmin', function (req, res) {
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, '../public/images/');
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+})
+
+const upload = multer({ storage: storage })
+
+router.post('/homeadmin', upload.array('imagen', 3), function (req, res) {
     const { nombre, stock, precio, descrip, marca } = req.body;
     const sql = 'INSERT INTO Productos (nombre, stock, precio, descripcion, marca) VALUES (?,?,?,?,?)';
     conexion.query(sql, [nombre, stock, precio, descrip, marca], function (error, resultado) {
@@ -11,6 +23,41 @@ router.post('/homeadmin', function (req, res) {
         }
         res.json({ status: 'ok' });
     })
+
+    const sqlImg = "INSERT INTO Imagenes (id_producto, url) VALUES (?,?)";
+    const productId = resultado.insertId;
+
+    if (req.files && req.files.length > 0) {
+
+        const imagenesSubidas = req.files.map(file => ({
+            productId: productId,
+            imagenUrl: file.filename
+        }));
+
+        const promises = imagenesSubidas.map(imagen => {
+            return new Promise((resolve, reject) => {
+                conexion.query(sqlImg, [imagen.productId, imagen.imagenUrl], (err, result) => {
+                    if (err) {
+                        return reject(err);
+                    }
+                    resolve(result);
+                });
+            });
+        });
+
+        Promise.all(promises)
+            .then(() => {
+                res.status(201).json({
+                    message: 'Propiedad e imágenes creadas con éxito',
+                    productId: productId,
+                    imagenes: imagenesSubidas.map(imagen => imagen.imagenUrl)
+                });
+            })
+            .catch(err => {
+                res.status(500).json({ error: 'Error al guardar las imágenes: ' + err.message });
+            });
+
+    }
 })
 
 router.get('/homeadmin', function (req, res) {
