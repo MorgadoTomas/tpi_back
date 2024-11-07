@@ -21,11 +21,11 @@ router.post('/productos', upload.array('imagen', 3), function (req, res) {
             console.log(error)
             return res.send('error en el post')
         }
-        res.json({ status: 'ok' });
+        res.json({ status: 'ok'}); 
+        const productId = resultado.insertId;
     })
 
     const sqlImg = "INSERT INTO Imagenes (id_producto, url) VALUES (?,?)";
-    const productId = resultado.insertId;
 
     if (req.files && req.files.length > 0) {
 
