@@ -61,8 +61,9 @@ router.post('/productos', upload.array('imagen', 3), function (req, res) {
 })
 
 router.get('/productos', function (req, res) {
+    const {stock} = req.query;
     const sql = 'SELECT * FROM Productos WHERE stock > 0'
-    conexion.query(sql, [nombre], function (error, resultado) {
+    conexion.query(sql, [stock], function (error, resultado) {
         if (error) {
             console.log(error)
             return res.send('Error en el get')
@@ -77,7 +78,7 @@ router.put('/productos', function (req, res) {
     conexion.query(sql, [nuevonombre, stock, precio, descripcion, marca, id], function (error, resultado) {
         if (error) {
             console.log(error)
-            return res.send('Error en el put')
+            return res.send('Error en el put')  
         }
         res.json({ status: 'ok' })
     })
