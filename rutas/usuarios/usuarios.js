@@ -1,7 +1,8 @@
 const router = require('express').Router();
 const { conexion } = require('../../conexion');
 const bcrypt = require('bcrypt');
-const { secret, veceshash } = require('../../config.js')
+const secret = 'ElQueLeeLeGustaLaJapi';
+const veceshash = 10;
 
 
 function generateToken(username) {
@@ -28,12 +29,7 @@ router.post('/registrar', function (req, res) {
     })
 });
 
-router.put('/recuperarpass', function (req, res) {
-    const { password, newpassword } = req.body;
-    const sql = "UPDATE Usuarios SET contrasena = ?"
-    
 
-})
 
 
 router.post('/login', function (req, res) {

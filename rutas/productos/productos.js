@@ -21,11 +21,11 @@ router.post('/productos', upload.array('imagen', 3), function (req, res) {
             console.log(error)
             return res.send('error en el post')
         }
-        res.json({ status: 'ok' });
+        res.json({ status: 'ok'}); 
+        const productId = resultado.insertId;
     })
 
     const sqlImg = "INSERT INTO Imagenes (id_producto, url) VALUES (?,?)";
-    const productId = resultado.insertId;
 
     if (req.files && req.files.length > 0) {
 
@@ -61,8 +61,9 @@ router.post('/productos', upload.array('imagen', 3), function (req, res) {
 })
 
 router.get('/productos', function (req, res) {
+    const {stock} = req.query;
     const sql = 'SELECT * FROM Productos WHERE stock > 0'
-    conexion.query(sql, [nombre], function (error, resultado) {
+    conexion.query(sql, [stock], function (error, resultado) {
         if (error) {
             console.log(error)
             return res.send('Error en el get')
@@ -77,7 +78,7 @@ router.put('/productos', function (req, res) {
     conexion.query(sql, [nuevonombre, stock, precio, descripcion, marca, id], function (error, resultado) {
         if (error) {
             console.log(error)
-            return res.send('Error en el put')
+            return res.send('Error en el put')  
         }
         res.json({ status: 'ok' })
     })
