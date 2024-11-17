@@ -9,7 +9,7 @@ router.get('/home', function (req, res) {
             console.log(error)
             return res.send('Error en el get')
         }
-        res.json({ status: 'ok' })
+        res.json({ status: 'ok', productos: ArrayResultadoH })
     })
 })
 
@@ -20,7 +20,7 @@ router.get('/homec', function (req, res) {
 
     conexion.query(sql, [id_categoria], function (err, result) {
         if (err) return res.json(err);
-        res.json({ status: 'ok' });
+        res.json({ status: 'ok', productos: ArrayResultadoHc });
         console.log(result);
     })
 })

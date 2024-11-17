@@ -68,7 +68,7 @@ router.get('/productos', function (req, res) {
             console.log(error)
             return res.send('Error en el get')
         }
-        res.json({ status: 'ok' })
+        res.json({ status: 'ok', productos: ArrayResultado })
     })
 })
 
