@@ -2,7 +2,7 @@ const router = require('express').Router();
 const jwt = require('jsonwebtoken');
 const { conexion } = require('../../conexion');
 const bcrypt = require('bcrypt');
-const secret = 'ElQueLeeLeGustaLaJapi';
+const secret = '234u3i49kkfdsi8732934';
 const veceshash = 10;
 
 
