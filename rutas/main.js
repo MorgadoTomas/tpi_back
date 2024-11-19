@@ -5,6 +5,6 @@ const homeRouter = require('./productos/home')
 
 
 router.use('/usuarios', usuariosRouter);
-router.use('/', adminRouter);
+router.use('/admin', adminRouter);
 router.use('/', homeRouter)
 module.exports = router;
