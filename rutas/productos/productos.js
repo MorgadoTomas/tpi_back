@@ -71,7 +71,6 @@ router.get('/productos', function (req, res) {
         res.json({ status: 'ok', productos: resultado })
     })
 })
-
 router.put('/productos', function (req, res) {
     const { id, nuevonombre, stock, precio, descripcion, marca } = req.body;
     const sql = "UPDATE Productos SET nombre = ?, stock = ?, precio = ?, descripcion = ?, marca = ? WHERE id = ?";

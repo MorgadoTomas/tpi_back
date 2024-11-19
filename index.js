@@ -1,12 +1,11 @@
 const express = require('express');
 const path = require('path');
 const apiRouter = require('./rutas/main');
-const cors = require('cors'); 
+const cors = require('cors'); // Importar cors
 const app = express();
-const port = 4000;
+const port = 8080;
 
-
-app.use(cors({ origin: '*' })); 
+app.use(cors({ origin: 'http://localhost:5173' })); // Permitir solicitudes desde el frontend en localhost
 app.use(express.json());
 app.use('/api', apiRouter);
 app.use('/', express.static(path.join(__dirname, 'public')));
