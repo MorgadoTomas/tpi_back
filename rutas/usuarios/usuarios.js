@@ -1,7 +1,8 @@
 const router = require('express').Router();
+const jwt = require('jsonwebtoken');
 const { conexion } = require('../../conexion');
 const bcrypt = require('bcrypt');
-const secret = 'ElQueLeeLeGustaLaJapi';
+const secret = '234u3i49kkfdsi8732934';
 const veceshash = 10;
 
 
@@ -34,7 +35,7 @@ router.post('/registrar', function (req, res) {
 
 router.post('/login', function (req, res) {
     const { usuario, password } = req.body;
-    const sql = 'SELECT contrasena FROM Usuarios WHERE usuario = ?';
+    const sql = 'SELECT contrasena, admin FROM Usuarios WHERE usuario = ?';
     conexion.query(sql, [usuario], function (error, results) {
         if (error) {
             console.log(error);
@@ -45,6 +46,8 @@ router.post('/login', function (req, res) {
         }
 
         const hashedPassword = results[0].contrasena;
+        const adminVerificacion = results[0].admin;
+        
 
 
         if (bcrypt.compareSync(password, hashedPassword)) {
@@ -53,7 +56,7 @@ router.post('/login', function (req, res) {
                 console.log("Existe un token")
             }
 
-            res.json({ status: 'ok', token });
+            res.json({ status: 'ok', token, adminVerificacion });
         } else {
 
             res.status(401).send('Contraseña incorrecta');

@@ -61,18 +61,16 @@ router.post('/productos', upload.array('imagen', 3), function (req, res) {
 })
 
 router.get('/productos', function (req, res) {
-    const { stock } = req.query;
     const sql = 'SELECT * FROM Productos WHERE stock > 0';
-    conexion.query(sql, [stock], function (error, resultado) {
+    conexion.query(sql, function (error, resultado) {
         if (error) {
             console.log(error);
             return res.status(500).send('Error en el get');
         }
-        
-        // Devolver los productos en la respuesta
-        res.json({ status: 'ok', productos: resultado });
-    });
-});
+        res.json({ status: 'ok', productos: ArrayResultado })
+    })
+})
+
 router.put('/productos', function (req, res) {
     const { id, nuevonombre, stock, precio, descripcion, marca } = req.body;
     const sql = "UPDATE Productos SET nombre = ?, stock = ?, precio = ?, descripcion = ?, marca = ? WHERE id = ?";
