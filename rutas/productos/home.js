@@ -15,7 +15,7 @@ router.get('/home', function (req, res) {
 
 router.get('/homec', function (req, res) {
     const { id_categoria } = req.query;
-    const sql = `SELECT * FROM Productos AS P JOIN ProdCat AS PC ON P.idProducto = PC.id_producto 
+    const sql = `SELECT * FROM Productos AS P JOIN ProdCat AS PC ON P.id = PC.id_producto 
     JOIN Categorias C ON C.id = PC.id_categoria WHERE C.id = ?`;
 
     conexion.query(sql, [id_categoria], function (err, result) {
