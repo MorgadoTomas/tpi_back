@@ -3,7 +3,7 @@ const { conexion } = require('../../conexion');
 
 router.get('/home', function (req, res) {
     const { nombre } = req.query;
-    const sql = `SELECT * FROM Productos WHERE stock > 0 nombre like '%?%'`
+    const sql = `SELECT * FROM Productos WHERE stock > 0 AND nombre like '%?%'`
     conexion.query(sql, [nombre], function (error, resultado) {
         if (error) {
             console.log(error)
