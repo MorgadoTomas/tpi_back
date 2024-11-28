@@ -3,7 +3,6 @@ const usuariosRouter = require('./usuarios/usuarios');
 const adminRouter = require('./productos/productos')
 const homeRouter = require('./productos/home')
 
-
 router.use('/usuarios', usuariosRouter);
 router.use('/admin', adminRouter);
 router.use('/', homeRouter)
