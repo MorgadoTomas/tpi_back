@@ -22,7 +22,6 @@ router.post('/productos', upload.array('imagen', 3), function (req, res) {
             console.log(error);
             return res.status(500).send('Error en el post');
         }
-
         const productId = resultado.insertId;
         const sqlImg = "INSERT INTO Imagenes (id_producto, url) VALUES (?,?)";
 

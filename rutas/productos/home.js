@@ -35,9 +35,29 @@ router.get('/home', (req, res) => {
             console.error("Error al filtrar productos:", error);
             return res.status(500).json({ error: "Error al obtener productos." });
         }
+<<<<<<< HEAD
 
         res.json({ status: 'ok', productos: resultado });
     });
 });
 
 module.exports = router;
+=======
+        res.json({ status: 'ok', productos: resultado})
+    })
+})
+
+router.get('/homec', function (req, res) {
+    const { id_categoria } = req.query;
+    const sql = `SELECT * FROM Productos AS P JOIN ProdCat AS PC ON P.id = PC.id_producto 
+    JOIN Categorias C ON C.id = PC.id_categoria WHERE C.id = ?`;
+
+    conexion.query(sql, [id_categoria], function (err, result) {
+        if (err) return res.json(err);
+        res.json({ status: 'ok', productos: result });
+        console.log(result);
+    })
+})
+
+module.exports = router;
+>>>>>>> af74633ea2d74ea0a7e64b3e8813ae29ab8b3eb0
