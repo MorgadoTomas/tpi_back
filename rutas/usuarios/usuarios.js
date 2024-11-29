@@ -30,12 +30,9 @@ router.post('/registrar', function (req, res) {
     })
 });
 
-
-
-
 router.post('/login', function (req, res) {
     const { usuario, password } = req.body;
-    const sql = 'SELECT contrasena, admin FROM Usuarios WHERE usuario = ?';
+    const sql = 'SELECT contrasena, admin, nombre FROM Usuarios WHERE usuario = ?';
     conexion.query(sql, [usuario], function (error, results) {
         if (error) {
             console.log(error);
@@ -47,18 +44,17 @@ router.post('/login', function (req, res) {
 
         const hashedPassword = results[0].contrasena;
         const adminVerificacion = results[0].admin;
+        const nombreUsuario = results[0].nombre;  // Obtener el nombre del usuario
         
-
-
         if (bcrypt.compareSync(password, hashedPassword)) {
-            const token = generateToken(usuario)
+            const token = generateToken(usuario);
             if (!token) {
-                console.log("Existe un token")
+                console.log("Existe un token");
             }
 
-            res.json({ status: 'ok', token, adminVerificacion });
+            // Devolver el token, la verificación de admin, y el nombre del usuario
+            res.json({ status: 'ok', token, adminVerificacion, usuario: nombreUsuario });
         } else {
-
             res.status(401).send('Contraseña incorrecta');
         }
 
