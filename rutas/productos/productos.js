@@ -117,6 +117,19 @@ router.put('/productos', function (req, res) {
     });
 });
 
+router.put('/carrito', function (req, res) {
+    const {stock, id} = req.body;
+    const sql = "UPDATE Productos SET stock = stock - ? WHERE id = ?";
+    conexion.query(sql, [stock, id], function (error, resultado) {
+        if (error) {
+            console.log(error)
+            return res.send('Error en el put')
+        }
+        res.json({ status: 'ok, modificacion completa' })
+    })
+})
+
+
 // Eliminar un producto
 router.delete('/productos', function (req, res) {
     const { id } = req.query;
