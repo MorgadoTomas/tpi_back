@@ -131,8 +131,8 @@ router.put('/carrito', function (req, res) {
 
 router.post('/carrito', function (req, res) {
     const { cantidad, precio_u  } = req.body;
-    const sql = 'SELECT p.id AS idproducto, p.precio AS precioproducto, c.id AS comprasid, dc.cantidad AS dccantidad FROM DetalledeCompra dc JOIN Productos p ON dc.id_producto = p.id JOIN compras c ON dc.id_compra = c.id';
-    const sql2 =' INSERT INTO DetalledeCompra (cantidad, precio_u) VALUES (?, ?)'
+    const sql = 'SELECT p.id AS idproducto, p.precio AS precioproducto, c.id AS comprasid, dc.cantidad AS dccantidad FROM Detalledecompra dc JOIN Productos p ON dc.id_producto = p.id JOIN Compras c ON dc.id_compra = c.id';
+    const sql2 =' INSERT INTO Detalledecompra (cantidad, precio_u) VALUES (?, ?)'
     conexion.query(sql, sql2 [cantidad, precio_u], function (error, resultado) {
         if (error) {
             console.log(error);
