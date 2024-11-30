@@ -129,7 +129,18 @@ router.put('/carrito', function (req, res) {
     })
 })
 
-
+router.post('/carrito', function (req, res) {
+    const { cantidad, precio_u  } = req.body;
+    const sql = 'SELECT p.id AS idproducto, p.precio AS precioproducto, c.id AS comprasid, dc.cantidad AS dccantidad FROM DetalledeCompra dc JOIN Productos p ON dc.id_producto = p.id JOIN compras c ON dc.id_compra = c.id';
+    const sql2 =' INSERT INTO DetalledeCompra (cantidad, precio_u) VALUES (?, ?)'
+    conexion.query(sql, sql2 [cantidad, precio_u], function (error, resultado) {
+        if (error) {
+            console.log(error);
+            return res.status(500).send('Error en el post');
+        }
+        res.json({ status: 'ok' });
+    });
+});
 // Eliminar un producto
 router.delete('/productos', function (req, res) {
     const { id } = req.query;
