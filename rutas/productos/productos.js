@@ -129,18 +129,27 @@ router.put('/carrito', function (req, res) {
     })
 })
 
-router.post('/carrito', function (req, res) {
-    const { cantidad, precio_u  } = req.body;
-    const sql = 'SELECT p.id AS idproducto, p.precio AS precioproducto, c.id AS comprasid, dc.cantidad AS dccantidad FROM Detalledecompra dc JOIN Productos p ON dc.id_producto = p.id JOIN Compras c ON dc.id_compra = c.id';
-    const sql2 =' INSERT INTO Detalledecompra (cantidad, precio_u) VALUES (?, ?)'
-    conexion.query(sql, sql2 [cantidad, precio_u], function (error, resultado) {
-        if (error) {
-            console.log(error);
-            return res.status(500).send('Error en el post');
+router.post('/carrito', (req, res) => {
+    const { id_usuario, id_met_de_pago, direccion, total } = req.body;
+
+    // Inserta los datos en la tabla Compras
+    const sql = `
+        INSERT INTO Compras (id_usuario, id_met_de_pago, direccion, total) 
+        VALUES (?, ?, ?, ?)
+    `;
+
+    conexion.query(sql, [id_usuario, id_met_de_pago, direccion, total], (err, result) => {
+        if (err) {
+            console.error('Error al insertar la compra:', err);
+            return res.status(500).json({ error: 'Error al insertar la compra' });
         }
-        res.json({ status: 'ok' });
+
+        // Obtén el ID de la compra recién creada
+        const compraId = result.insertId;
+        res.status(201).json({ message: 'Compra creada con éxito', compraId });
     });
 });
+
 // Eliminar un producto
 router.delete('/productos', function (req, res) {
     const { id } = req.query;
