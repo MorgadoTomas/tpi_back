@@ -132,21 +132,35 @@ router.put('/carrito', function (req, res) {
 router.post('/carrito', (req, res) => {
     const { id_usuario, id_met_de_pago, direccion, total } = req.body;
 
-    // Inserta los datos en la tabla Compras
     const sql = `
-        INSERT INTO Compras (id_usuario, id_met_de_pago, direccion, total) 
+        INSERT INTO Compras (id_usuario, id_met_de_pago, direccion, total)
         VALUES (?, ?, ?, ?)
     `;
 
     conexion.query(sql, [id_usuario, id_met_de_pago, direccion, total], (err, result) => {
         if (err) {
-            console.error('Error al insertar la compra:', err);
-            return res.status(500).json({ error: 'Error al insertar la compra' });
+            console.error('Error al registrar la compra:', err);
+            return res.status(500).json({ error: 'Error al registrar la compra' });
         }
 
-        // Obtén el ID de la compra recién creada
-        const compraId = result.insertId;
-        res.status(201).json({ message: 'Compra creada con éxito', compraId });
+        res.status(201).json({ compraId: result.insertId });
+    });
+});
+
+router.post('/carrito/detalle', (req, res) => {
+    const { id_compra, id_producto, cantidad, precio_u } = req.body;
+
+    const sql = `
+        INSERT INTO Detalledecompra (id_compra, id_producto, cantidad, precio_u)
+        VALUES (?, ?, ?, ?)
+    `;
+
+    conexion.query(sql, [id_compra, id_producto, cantidad, precio_u], (err) => {
+        if (err) {
+            console.error('Error al insertar detalle de compra:', err);
+            return res.status(500).json({ error: 'Error al insertar detalle de compra' });
+        }
+        res.status(201).json({ message: 'Detalle registrado correctamente' });
     });
 });
 
