@@ -1,3 +1,4 @@
+
 const router = require('express').Router();
 const { conexion } = require('../../conexion');
 const multer = require('multer');
@@ -5,7 +6,7 @@ const multer = require('multer');
 // Configuración de Multer
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, './public/images/'); // Ajuste en la ruta
+        cb(null, './public/images/'); // en que ruta se van a guardar las imagenes
     },
     filename: (req, file, cb) => {
         cb(null, Date.now() + '-' + file.originalname);
@@ -13,7 +14,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// Crear un producto con imágenes
+// crear un producto
 router.post('/productos', upload.array('imagen', 3), function (req, res) {
     const { nombre, stock, precio, descrip, marca } = req.body;
     const sql = 'INSERT INTO Productos (nombre, stock, precio, descripcion, marca) VALUES (?,?,?,?,?)';
