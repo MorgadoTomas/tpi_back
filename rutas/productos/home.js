@@ -1,9 +1,9 @@
 const router = require('express').Router();
 const { conexion } = require('../../conexion');
 
-// Filtro por nombre y categorías
+// Filtro por nombre, categorías y ordenamiento
 router.get('/home', (req, res) => {
-    const { nombre, categorias } = req.query;
+    const { nombre, categorias, orden } = req.query;
 
     let sql = `
         SELECT P.*, GROUP_CONCAT(I.url) AS imagenes
@@ -29,6 +29,11 @@ router.get('/home', (req, res) => {
     }
 
     sql += " GROUP BY P.id"; // Evitar duplicados en los resultados
+
+    // Ordenar por precio si se especifica
+    if (orden) {
+        sql += orden === 'asc' ? " ORDER BY P.precio ASC" : " ORDER BY P.precio DESC";
+    }
 
     conexion.query(sql, params, (error, resultado) => {
         if (error) {
