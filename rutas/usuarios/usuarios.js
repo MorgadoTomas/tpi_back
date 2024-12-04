@@ -61,5 +61,30 @@ router.post('/login', function (req, res) {
     });
 });
 
+// Obtener todos los usuarios
+router.get('/usuarios', function (req, res) {
+    const sql = 'SELECT id, nombre, email FROM Usuarios';
+    conexion.query(sql, function (error, results) {
+      if (error) {
+        console.log(error);
+        return res.status(500).send('Ocurrió un error');
+      }
+      res.json({ usuarios: results });
+    });
+  });
+  
+  // Eliminar un usuario
+  router.delete('/usuarios/:id', function (req, res) {
+    const { id } = req.params;
+    const sql = 'DELETE FROM Usuarios WHERE id = ?';
+    conexion.query(sql, [id], function (error, result) {
+      if (error) {
+        console.log(error);
+        return res.status(500).send('Ocurrió un error');
+      }
+      res.json({ status: 'ok' });
+    });
+  });
+  
 
 module.exports = router;
