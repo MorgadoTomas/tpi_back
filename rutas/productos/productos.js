@@ -173,14 +173,37 @@ router.post('/carrito/detalle', (req, res) => {
 // Eliminar un producto
 router.delete('/productos/:id', function (req, res) {
     const { id } = req.params;
-    const sql = 'DELETE FROM Productos WHERE id = ?';
 
-    conexion.query(sql, [id], function (error, resultado) {
+    // Verificamos si el producto existe
+    const sqlCheck = 'SELECT * FROM Productos WHERE id = ?';
+    conexion.query(sqlCheck, [id], function (error, resultados) {
         if (error) {
             console.log(error);
-            return res.status(500).send('Error al eliminar el producto');
+            return res.status(500).send('Error al verificar el producto');
         }
-        res.status(200).json({ message: 'Producto eliminado con éxito' });
+
+        if (resultados.length === 0) {
+            return res.status(404).json({ message: 'Producto no encontrado' });
+        }
+
+        // Eliminamos las imágenes asociadas al producto
+        const sqlDeleteImages = 'DELETE FROM Imagenes WHERE id_producto = ?';
+        conexion.query(sqlDeleteImages, [id], function (error) {
+            if (error) {
+                console.log(error);
+                return res.status(500).send('Error al eliminar las imágenes del producto');
+            }
+
+            // Ahora eliminamos el producto
+            const sqlDeleteProduct = 'DELETE FROM Productos WHERE id = ?';
+            conexion.query(sqlDeleteProduct, [id], function (error) {
+                if (error) {
+                    console.log(error);
+                    return res.status(500).send('Error al eliminar el producto');
+                }
+                res.status(200).json({ message: 'Producto y sus imágenes eliminados con éxito' });
+            });
+        });
     });
 });
 
