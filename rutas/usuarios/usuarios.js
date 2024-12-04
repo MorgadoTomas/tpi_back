@@ -73,18 +73,5 @@ router.get('/usuarios', function (req, res) {
     });
   });
   
-  // Eliminar un usuario
-  router.delete('/usuarios/:id', function (req, res) {
-    const { id } = req.params;
-    const sql = 'DELETE FROM Usuarios WHERE id = ?';
-    conexion.query(sql, [id], function (error, result) {
-      if (error) {
-        console.log(error);
-        return res.status(500).send('Ocurrió un error');
-      }
-      res.json({ status: 'ok' });
-    });
-  });
   
-
 module.exports = router;
