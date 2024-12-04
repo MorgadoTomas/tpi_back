@@ -6,17 +6,21 @@ const multer = require('multer');
 // Configuración de Multer
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, './public/images/'); // en que ruta se van a guardar las imagenes
+        cb(null, './public/images/'); // Ruta para guardar las imágenes
     },
     filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname);
+        cb(null, Date.now() + '-' + file.originalname); // Nombre único para las imágenes
     }
 });
-const upload = multer({ storage: storage });
+
+const upload = multer({ storage: storage }); // Middleware de multer
+
 
 // crear un producto
 router.post('/productos', upload.array('imagen', 3), function (req, res) {
     const { nombre, stock, precio, descrip, marca } = req.body;
+
+    // Inserción de producto en la base de datos
     const sql = 'INSERT INTO Productos (nombre, stock, precio, descripcion, marca) VALUES (?,?,?,?,?)';
     conexion.query(sql, [nombre, stock, precio, descrip, marca], function (error, resultado) {
         if (error) {
@@ -57,6 +61,7 @@ router.post('/productos', upload.array('imagen', 3), function (req, res) {
         }
     });
 });
+
 
 // Obtener un producto por ID con imágenes
 router.get('/productos/:id', function (req, res) {
@@ -166,17 +171,17 @@ router.post('/carrito/detalle', (req, res) => {
 });
 
 // Eliminar un producto
-router.delete('/productos', function (req, res) {
-    const { id } = req.query;
-    const sql = "DELETE FROM Productos WHERE id = ?";
-    conexion.query(sql, [id], function (error) {
+router.delete('/productos/:id', function (req, res) {
+    const { id } = req.params;
+    const sql = 'DELETE FROM Productos WHERE id = ?';
+
+    conexion.query(sql, [id], function (error, resultado) {
         if (error) {
             console.log(error);
-            return res.status(500).send('Error en el delete');
+            return res.status(500).send('Error al eliminar el producto');
         }
-        res.json({ status: 'ok' });
+        res.status(200).json({ message: 'Producto eliminado con éxito' });
     });
 });
 
 module.exports = router;
-
