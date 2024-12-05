@@ -18,50 +18,72 @@ const upload = multer({ storage: storage }); // Middleware de multer
 
 // crear un producto
 router.post('/productos', upload.array('imagen', 3), function (req, res) {
-    const { nombre, stock, precio, descrip, marca } = req.body;
+    const { nombre, stock, precio, descrip, marca, categoria } = req.body;
 
+    const validarCategoriaSQL = 'SELECT COUNT(*) as count FROM Categorias WHERE id = ?';
+    conexion.query(validarCategoriaSQL, [categoria], (err, result) => {
+    if (err) {
+        console.log(err);
+        return res.status(500).send('Error validando la categoría');
+    }
+    if (result[0].count === 0) {
+        return res.status(400).send('Categoría no válida');
+    }
+    // Proceder con la inserción...
+    });
+
+  
     // Inserción de producto en la base de datos
     const sql = 'INSERT INTO Productos (nombre, stock, precio, descripcion, marca) VALUES (?,?,?,?,?)';
     conexion.query(sql, [nombre, stock, precio, descrip, marca], function (error, resultado) {
+      if (error) {
+        console.log(error);
+        return res.status(500).send('Error en el post');
+      }
+      const productId = resultado.insertId;
+  
+      // Insertar en la tabla ProdCat para asociar el producto con la categoría
+      const sqlProdCat = 'INSERT INTO ProdCat (id_producto, id_categoria) VALUES (?, ?)';
+      conexion.query(sqlProdCat, [productId, categoria], function (error, resultadoProdCat) {
         if (error) {
-            console.log(error);
-            return res.status(500).send('Error en el post');
+          console.log(error);
+          return res.status(500).send('Error al asociar producto con categoría');
         }
-        const productId = resultado.insertId;
+  
         const sqlImg = "INSERT INTO Imagenes (id_producto, url) VALUES (?,?)";
-
+  
         if (req.files && req.files.length > 0) {
-            const imagenesSubidas = req.files.map(file => ({
-                productId: productId,
-                imagenUrl: file.filename
-            }));
-
-            const promises = imagenesSubidas.map(imagen => {
-                return new Promise((resolve, reject) => {
-                    conexion.query(sqlImg, [imagen.productId, imagen.imagenUrl], (err, result) => {
-                        if (err) return reject(err);
-                        resolve(result);
-                    });
-                });
+          const imagenesSubidas = req.files.map(file => ({
+            productId: productId,
+            imagenUrl: file.filename
+          }));
+  
+          const promises = imagenesSubidas.map(imagen => {
+            return new Promise((resolve, reject) => {
+              conexion.query(sqlImg, [imagen.productId, imagen.imagenUrl], (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+              });
             });
-
-            Promise.all(promises)
-                .then(() => {
-                    res.status(201).json({
-                        message: 'Producto e imágenes creadas con éxito',
-                        productId: productId,
-                        imagenes: imagenesSubidas.map(imagen => imagen.imagenUrl)
-                    });
-                })
-                .catch(err => {
-                    res.status(500).json({ error: 'Error al guardar las imágenes: ' + err.message });
-                });
+          });
+  
+          Promise.all(promises)
+            .then(() => {
+              res.status(201).json({
+                message: 'Producto e imágenes creadas con éxito',
+                productId: productId,
+                imagenes: imagenesSubidas.map(imagen => imagen.imagenUrl)
+              });
+            })
+            .catch(err => {
+              res.status(500).json({ error: 'Error al guardar las imágenes: ' + err.message });
+            });
         } else {
-            res.status(201).json({ message: 'Producto creado sin imágenes', productId: productId });
+          res.status(201).json({ message: 'Producto creado sin imágenes', productId: productId });
         }
+      });
     });
-});
-
+  });  
 
 // Obtener un producto por ID con imágenes
 router.get('/productos/:id', function (req, res) {
