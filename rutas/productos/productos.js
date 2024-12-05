@@ -1,4 +1,3 @@
-
 const router = require('express').Router();
 const { conexion } = require('../../conexion');
 const multer = require('multer');
