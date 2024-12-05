@@ -120,9 +120,15 @@ router.get('/productos/:id', function (req, res) {
     });
 });
 
-// Obtener todos los productos
+// Obtener todos los productos con sus categorías
 router.get('/productos', function (req, res) {
-    const sql = 'SELECT * FROM Productos WHERE stock > 0';
+    const sql = `
+        SELECT p.*, c.nombre AS categoria
+        FROM Productos p
+        LEFT JOIN ProdCat pc ON p.id = pc.id_producto
+        LEFT JOIN Categorias c ON c.id = pc.id_categoria
+        WHERE p.stock > 0
+    `;
     conexion.query(sql, function (error, resultado) {
         if (error) {
             console.log(error);
@@ -131,6 +137,8 @@ router.get('/productos', function (req, res) {
         res.json({ status: 'ok', productos: resultado });
     });
 });
+
+
 
 // Actualizar un producto
 router.put('/productos', function (req, res) {
@@ -193,37 +201,47 @@ router.post('/carrito/detalle', (req, res) => {
 });
 
 // Eliminar un producto
-router.delete('/productos/:id', function (req, res) {
+router.delete('/productos/:id', (req, res) => {
     const { id } = req.params;
 
-    // Verificamos si el producto existe
-    const sqlCheck = 'SELECT * FROM Productos WHERE id = ?';
-    conexion.query(sqlCheck, [id], function (error, resultados) {
-        if (error) {
-            console.log(error);
-            return res.status(500).send('Error al verificar el producto');
+    // Verificar si el producto existe antes de intentar eliminar
+    const checkProductSQL = 'SELECT * FROM Productos WHERE id = ?';
+    conexion.query(checkProductSQL, [id], (err, result) => {
+        if (err) {
+            console.error('Error verificando el producto:', err);
+            return res.status(500).send('Error interno al verificar el producto');
+        }
+        if (result.length === 0) {
+            return res.status(404).send('Producto no encontrado');
         }
 
-        if (resultados.length === 0) {
-            return res.status(404).json({ message: 'Producto no encontrado' });
-        }
+        // Inicia eliminación de imágenes, relaciones y producto
+        const deleteImagesSQL = 'DELETE FROM Imagenes WHERE id_producto = ?';
+        const deleteRelationsSQL = 'DELETE FROM ProdCat WHERE id_producto = ?';
+        const deleteProductSQL = 'DELETE FROM Productos WHERE id = ?';
 
-        // Eliminamos las imágenes asociadas al producto
-        const sqlDeleteImages = 'DELETE FROM Imagenes WHERE id_producto = ?';
-        conexion.query(sqlDeleteImages, [id], function (error) {
-            if (error) {
-                console.log(error);
-                return res.status(500).send('Error al eliminar las imágenes del producto');
+        // Realiza las consultas de eliminación
+        conexion.query(deleteImagesSQL, [id], (err) => {
+            if (err) {
+                console.error('Error eliminando imágenes:', err);
+                return res.status(500).send('Error interno al eliminar imágenes');
             }
 
-            // Ahora eliminamos el producto
-            const sqlDeleteProduct = 'DELETE FROM Productos WHERE id = ?';
-            conexion.query(sqlDeleteProduct, [id], function (error) {
-                if (error) {
-                    console.log(error);
-                    return res.status(500).send('Error al eliminar el producto');
+            conexion.query(deleteRelationsSQL, [id], (err) => {
+                if (err) {
+                    console.error('Error eliminando relaciones:', err);
+                    return res.status(500).send('Error interno al eliminar relaciones');
                 }
-                res.status(200).json({ message: 'Producto y sus imágenes eliminados con éxito' });
+
+                conexion.query(deleteProductSQL, [id], (err) => {
+                    if (err) {
+                        console.error('Error eliminando producto:', err);
+                        return res.status(500).send('Error interno al eliminar producto');
+                    }
+
+                    // Respuesta exitosa
+                    res.status(200).json({ message: 'Producto eliminado con éxito' });
+                });
             });
         });
     });
