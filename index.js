@@ -3,7 +3,7 @@ const path = require('path');
 const apiRouter = require('./rutas/main');
 const cors = require('cors'); 
 const app = express();
-const port = 8080;
+const port = 4000;
 
 app.use(cors({ origin: 'http://localhost:5173' })); 
 app.use(express.json());

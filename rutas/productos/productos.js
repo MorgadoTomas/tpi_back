@@ -1,3 +1,4 @@
+
 const router = require('express').Router();
 const { conexion } = require('../../conexion');
 const multer = require('multer');
@@ -5,17 +6,21 @@ const multer = require('multer');
 // Configuración de Multer
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, './public/images/'); // Ajuste en la ruta
+        cb(null, './public/images/'); // Ruta para guardar las imágenes
     },
     filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname);
+        cb(null, Date.now() + '-' + file.originalname); // Nombre único para las imágenes
     }
 });
-const upload = multer({ storage: storage });
 
-// Crear un producto con imágenes
+const upload = multer({ storage: storage }); // Middleware de multer
+
+
+// crear un producto
 router.post('/productos', upload.array('imagen', 3), function (req, res) {
     const { nombre, stock, precio, descrip, marca } = req.body;
+
+    // Inserción de producto en la base de datos
     const sql = 'INSERT INTO Productos (nombre, stock, precio, descripcion, marca) VALUES (?,?,?,?,?)';
     conexion.query(sql, [nombre, stock, precio, descrip, marca], function (error, resultado) {
         if (error) {
@@ -56,6 +61,7 @@ router.post('/productos', upload.array('imagen', 3), function (req, res) {
         }
     });
 });
+
 
 // Obtener un producto por ID con imágenes
 router.get('/productos/:id', function (req, res) {
@@ -129,33 +135,76 @@ router.put('/carrito', function (req, res) {
     })
 })
 
+router.post('/carrito', (req, res) => {
+    const { id_usuario, id_met_de_pago, direccion, total } = req.body;
 
+    const sql = `
+        INSERT INTO Compras (id_usuario, id_met_de_pago, direccion, total)
+        VALUES (?, ?, ?, ?)
+    `;
 
-router.post('/carrito', function (req, res) {
-    const { cantidad, precio_u  } = req.body;
-    const sql = 'SELECT p.id AS idproducto, p.precio AS precioproducto, c.id AS comprasid, dc.cantidad AS dccantidad FROM DetalledeCompra dc JOIN Productos p ON dc.id_producto = p.id JOIN compras c ON dc.id_compra = c.id';
-    const sql2 =' INSERT INTO DetalledeCompra (cantidad, precio_u) VALUES (?, ?)'
-    conexion.query(sql, sql2 [cantidad, precio_u], function (error, resultado) {
-        if (error) {
-            console.log(error);
-            return res.status(500).send('Error en el post');
+    conexion.query(sql, [id_usuario, id_met_de_pago, direccion, total], (err, result) => {
+        if (err) {
+            console.error('Error al registrar la compra:', err);
+            return res.status(500).json({ error: 'Error al registrar la compra' });
         }
-        res.json({ status: 'ok' });
+
+        res.status(201).json({ compraId: result.insertId });
+    });
+});
+
+router.post('/carrito/detalle', (req, res) => {
+    const { id_compra, id_producto, cantidad, precio_u } = req.body;
+
+    const sql = `
+        INSERT INTO Detalledecompra (id_compra, id_producto, cantidad, precio_u)
+        VALUES (?, ?, ?, ?)
+    `;
+
+    conexion.query(sql, [id_compra, id_producto, cantidad, precio_u], (err) => {
+        if (err) {
+            console.error('Error al insertar detalle de compra:', err);
+            return res.status(500).json({ error: 'Error al insertar detalle de compra' });
+        }
+        res.status(201).json({ message: 'Detalle registrado correctamente' });
     });
 });
 
 // Eliminar un producto
-router.delete('/productos', function (req, res) {
-    const { id } = req.query;
-    const sql = "DELETE FROM Productos WHERE id = ?";
-    conexion.query(sql, [id], function (error) {
+router.delete('/productos/:id', function (req, res) {
+    const { id } = req.params;
+
+    // Verificamos si el producto existe
+    const sqlCheck = 'SELECT * FROM Productos WHERE id = ?';
+    conexion.query(sqlCheck, [id], function (error, resultados) {
         if (error) {
             console.log(error);
-            return res.status(500).send('Error en el delete');
+            return res.status(500).send('Error al verificar el producto');
         }
-        res.json({ status: 'ok' });
+
+        if (resultados.length === 0) {
+            return res.status(404).json({ message: 'Producto no encontrado' });
+        }
+
+        // Eliminamos las imágenes asociadas al producto
+        const sqlDeleteImages = 'DELETE FROM Imagenes WHERE id_producto = ?';
+        conexion.query(sqlDeleteImages, [id], function (error) {
+            if (error) {
+                console.log(error);
+                return res.status(500).send('Error al eliminar las imágenes del producto');
+            }
+
+            // Ahora eliminamos el producto
+            const sqlDeleteProduct = 'DELETE FROM Productos WHERE id = ?';
+            conexion.query(sqlDeleteProduct, [id], function (error) {
+                if (error) {
+                    console.log(error);
+                    return res.status(500).send('Error al eliminar el producto');
+                }
+                res.status(200).json({ message: 'Producto y sus imágenes eliminados con éxito' });
+            });
+        });
     });
 });
 
 module.exports = router;
-
