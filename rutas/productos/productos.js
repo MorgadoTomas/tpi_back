@@ -1,5 +1,7 @@
 const router = require('express').Router();
 const { conexion } = require('../../conexion');
+const fs = require('fs');
+const path = require('path');
 const multer = require('multer');
 
 // Configuración de Multer
@@ -226,7 +228,6 @@ router.get('/ventas', (req, res) => {
     });
 });
 
-
 // Eliminar un producto
 router.delete('/productos/:id', (req, res) => {
     const { id } = req.params;
@@ -242,32 +243,53 @@ router.delete('/productos/:id', (req, res) => {
             return res.status(404).send('Producto no encontrado');
         }
 
-        // Inicia eliminación de imágenes, relaciones y producto
-        const deleteImagesSQL = 'DELETE FROM Imagenes WHERE id_producto = ?';
-        const deleteRelationsSQL = 'DELETE FROM ProdCat WHERE id_producto = ?';
-        const deleteProductSQL = 'DELETE FROM Productos WHERE id = ?';
-
-        // Realiza las consultas de eliminación
-        conexion.query(deleteImagesSQL, [id], (err) => {
+        // Obtener las imágenes asociadas al producto para eliminarlas físicamente
+        const getImagesSQL = 'SELECT url FROM Imagenes WHERE id_producto = ?';
+        conexion.query(getImagesSQL, [id], (err, images) => {
             if (err) {
-                console.error('Error eliminando imágenes:', err);
-                return res.status(500).send('Error interno al eliminar imágenes');
+                console.error('Error obteniendo imágenes:', err);
+                return res.status(500).send('Error al obtener imágenes');
             }
 
-            conexion.query(deleteRelationsSQL, [id], (err) => {
+            // Eliminar las imágenes físicas
+            images.forEach(image => {
+                const imagePath = path.join(__dirname, '../../public/images/', image.url);  // Ruta completa a la imagen
+                fs.unlink(imagePath, (err) => {
+                    if (err) {
+                        console.error('Error al eliminar imagen:', err);
+                    } else {
+                        console.log(`Imagen eliminada: ${imagePath}`);
+                    }
+                });
+            });
+
+            // Inicia eliminación de imágenes, relaciones y producto
+            const deleteImagesSQL = 'DELETE FROM Imagenes WHERE id_producto = ?';
+            const deleteRelationsSQL = 'DELETE FROM ProdCat WHERE id_producto = ?';
+            const deleteProductSQL = 'DELETE FROM Productos WHERE id = ?';
+
+            // Realiza las consultas de eliminación
+            conexion.query(deleteImagesSQL, [id], (err) => {
                 if (err) {
-                    console.error('Error eliminando relaciones:', err);
-                    return res.status(500).send('Error interno al eliminar relaciones');
+                    console.error('Error eliminando imágenes:', err);
+                    return res.status(500).send('Error interno al eliminar imágenes');
                 }
 
-                conexion.query(deleteProductSQL, [id], (err) => {
+                conexion.query(deleteRelationsSQL, [id], (err) => {
                     if (err) {
-                        console.error('Error eliminando producto:', err);
-                        return res.status(500).send('Error interno al eliminar producto');
+                        console.error('Error eliminando relaciones:', err);
+                        return res.status(500).send('Error interno al eliminar relaciones');
                     }
 
-                    // Respuesta exitosa
-                    res.status(200).json({ message: 'Producto eliminado con éxito' });
+                    conexion.query(deleteProductSQL, [id], (err) => {
+                        if (err) {
+                            console.error('Error eliminando producto:', err);
+                            return res.status(500).send('Error interno al eliminar producto');
+                        }
+
+                        // Respuesta exitosa
+                        res.status(200).json({ message: 'Producto eliminado con éxito' });
+                    });
                 });
             });
         });
