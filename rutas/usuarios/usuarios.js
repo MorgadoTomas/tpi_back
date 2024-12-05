@@ -63,15 +63,27 @@ router.post('/login', function (req, res) {
 
 // Obtener todos los usuarios
 router.get('/usuarios', function (req, res) {
-    const sql = 'SELECT id, nombre, email FROM Usuarios';
+    const sql = 'SELECT id, nombre, apellido, contrasena, admin, mail, usuario FROM Usuarios';
     conexion.query(sql, function (error, results) {
-      if (error) {
-        console.log(error);
-        return res.status(500).send('Ocurrió un error');
-      }
-      res.json({ usuarios: results });
+        if (error) {
+            console.log(error);
+            return res.status(500).send('Ocurrió un error');
+        }
+        res.json({ usuarios: results });
     });
-  });
-  
+});
+
+router.delete('/usuarios/:id', function (req, res) {
+    const { id } = req.params;
+    const sql = 'DELETE FROM Usuarios WHERE id = ?';
+    conexion.query(sql, [id], function (error, result) {
+        if (error) {
+            console.log(error);
+            return res.status(500).send('Ocurrió un error al eliminar el usuario');
+        }
+        res.json({ status: 'Usuario eliminado' });
+    });
+});
+
   
 module.exports = router;

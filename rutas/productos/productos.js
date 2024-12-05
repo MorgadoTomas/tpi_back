@@ -170,6 +170,34 @@ router.post('/carrito/detalle', (req, res) => {
     });
 });
 
+router.get('/ventas', (req, res) => {
+    const sql = `
+        SELECT 
+            c.id AS compraId, 
+            c.total, 
+            c.direccion, 
+            u.nombre AS usuario, 
+            m.tipo_de_pago AS metodoPago, 
+            p.nombre AS producto, 
+            dc.cantidad, 
+            dc.precio_u 
+        FROM Compras c
+        INNER JOIN Usuarios u ON c.id_usuario = u.id
+        INNER JOIN Metododepago m ON c.id_met_de_pago = m.id
+        INNER JOIN Detalledecompra dc ON c.id = dc.id_compra
+        INNER JOIN Productos p ON dc.id_producto = p.id;
+    `;
+
+    conexion.query(sql, (err, results) => {
+        if (err) {
+            console.error('Error al obtener las ventas:', err);
+            return res.status(500).json({ error: 'Error al obtener las ventas' });
+        }
+        res.json(results);
+    });
+});
+
+
 // Eliminar un producto
 router.delete('/productos/:id', function (req, res) {
     const { id } = req.params;
