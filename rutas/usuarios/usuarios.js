@@ -5,14 +5,12 @@ const bcrypt = require('bcrypt');
 const secret = '234u3i49kkfdsi8732934';
 const veceshash = 10;
 
-
 function generateToken(username) {
     const token = jwt.sign({ username }, secret, {
         expiresIn: '8h'
     });
-    return token
+    return token;
 }
-
 
 router.post('/registrar', function (req, res) {
     const { nombre, apellido, password, mail, usuario } = req.body;
@@ -23,11 +21,12 @@ router.post('/registrar', function (req, res) {
     conexion.query(sql, [nombre, apellido, hash, mail, usuario], function (error, result) {
         if (error) {
             console.log(error);
-            return res.send('ocurrio un error')
+            return res.send('ocurrio un error');
         }
-        res.json({ status: 'ok' });
-
-    })
+        // Obtener el ID generado
+        const userId = result.insertId;
+        res.json({ status: 'ok', userId, token: generateToken(usuario) });  // Enviar el ID y token al frontend
+    });
 });
 
 router.post('/login', function (req, res) {
@@ -57,7 +56,6 @@ router.post('/login', function (req, res) {
         } else {
             res.status(401).send('Contraseña incorrecta');
         }
-
     });
 });
 
@@ -85,5 +83,4 @@ router.delete('/usuarios/:id', function (req, res) {
     });
 });
 
-  
 module.exports = router;
