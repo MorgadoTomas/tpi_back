@@ -11,7 +11,6 @@ app.use('/api', apiRouter);
 app.use('/', express.static(path.join(__dirname, 'public')));
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
-
 app.listen(port, () => {
     console.log(`Ejecutando servidor en el puerto ${port}`);
 });
