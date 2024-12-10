@@ -140,19 +140,54 @@ router.get('/productos', function (req, res) {
 });
 
 
-
-// Actualizar un producto
+// Actualizar un producto, categoría e imagen
 router.put('/productos', function (req, res) {
-    const { id, nuevonombre, stock, precio, descripcion, marca } = req.body;
-    const sql = "UPDATE Productos SET nombre = ?, stock = ?, precio = ?, descripcion = ?, marca = ? WHERE id = ?";
-    conexion.query(sql, [nuevonombre, stock, precio, descripcion, marca, id], function (error) {
+    const { 
+        id, 
+        nuevonombre, 
+        stock, 
+        precio, 
+        descripcion, 
+        marca, 
+        nuevaCategoriaId, // Nuevo ID de categoría (si aplica)
+        nuevaImagenUrl // Nueva URL de imagen (si aplica)
+    } = req.body;
+
+    // Actualizar producto
+    const sqlProducto = "UPDATE Productos SET nombre = ?, stock = ?, precio = ?, descripcion = ?, marca = ? WHERE id = ?";
+    conexion.query(sqlProducto, [nuevonombre, stock, precio, descripcion, marca, id], function (error) {
         if (error) {
             console.log(error);
-            return res.status(500).send('Error en el put');
+            return res.status(500).send('Error al actualizar producto');
         }
+
+        // Si se proporciona un nuevo ID de categoría, actualizar la relación en ProdCat
+        if (nuevaCategoriaId) {
+            const sqlCategoria = "UPDATE ProdCat SET id_categoria = ? WHERE id_producto = ?";
+            conexion.query(sqlCategoria, [nuevaCategoriaId, id], function (errorCategoria) {
+                if (errorCategoria) {
+                    console.log(errorCategoria);
+                    return res.status(500).send('Error al actualizar categoría');
+                }
+            });
+        }
+
+        // Si se proporciona una nueva URL de imagen, actualizar la imagen
+        if (nuevaImagenUrl) {
+            const sqlImagen = "UPDATE Imagenes SET url = ? WHERE id_producto = ?";
+            conexion.query(sqlImagen, [nuevaImagenUrl, id], function (errorImagen) {
+                if (errorImagen) {
+                    console.log(errorImagen);
+                    return res.status(500).send('Error al actualizar imagen');
+                }
+            });
+        }
+
+        // Si todo se actualizó correctamente, responder con éxito
         res.json({ status: 'ok' });
     });
 });
+
 
 router.put('/carrito', function (req, res) {
     const {stock, id} = req.body;
