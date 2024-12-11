@@ -5,16 +5,25 @@ const bcrypt = require('bcrypt');
 const secret = '234u3i49kkfdsi8732934';
 const veceshash = 10;
 
-function generateToken(username) {
-    const token = jwt.sign({ username }, secret, {
-        expiresIn: '8h'
+function actualizarToken(usuario, res) {
+    const token = jwt.sign({ usuario }, secret, { expiresIn: '8h' });
+
+    const sql = 'INSERT INTO Usuarios (usuario, token) VALUES (?, ?) ON DUPLICATE KEY UPDATE token = VALUES(token)';
+
+    conexion.query(sql, [usuario, token], function(error, result) {
+        if (error) {
+            console.error(error);
+            return res.send('Ocurrió un error al insertar el token.');
+        }
+
+        return res.send({ success: true, token });
     });
-    return token;
 }
 
 router.post('/registrar', function (req, res) {
     const { nombre, apellido, password, mail, usuario } = req.body;
     const sql = 'INSERT INTO Usuarios (nombre, apellido, contrasena, mail, usuario) VALUES (?,?,?,?,?)';
+
 
     const hash = bcrypt.hashSync(password, veceshash);
 
@@ -25,7 +34,7 @@ router.post('/registrar', function (req, res) {
         }
         // Obtener el ID generado
         const userId = result.insertId;
-        res.json({ status: 'ok', userId, token: generateToken(usuario) });  // Enviar el ID y token al frontend
+        res.json({ status: 'ok', userId, token: actualizarToken(usuario) });  // Enviar el ID y token al frontend
     });
 });
 
