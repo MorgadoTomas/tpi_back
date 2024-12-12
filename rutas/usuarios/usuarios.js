@@ -48,11 +48,11 @@ router.post('/login', (req, res) => {
             return res.status(401).send('Usuario no encontrado');
         }
 
-        const { contrasena: hashedPassword, adminVerificacion, nombre: nombreUsuario } = results[0];
+        const { contrasena: hashedPassword, admin, nombre: nombreUsuario } = results[0];
 
         if (bcrypt.compareSync(password, hashedPassword)) {
             const token = jwt.sign({ usuario }, secret, { expiresIn: '8h' });
-            res.json({ status: 'ok', token, adminVerificacion, usuario: nombreUsuario });
+            res.json({ status: 'ok', token, adminVerificacion: admin, usuario: nombreUsuario });
         } else {
             res.status(401).send('Contraseña incorrecta');
         }
