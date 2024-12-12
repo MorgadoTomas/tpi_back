@@ -4,37 +4,34 @@ const { conexion } = require('../../conexion');
 const bcrypt = require('bcrypt');
 const secret = '234u3i49kkfdsi8732934';
 const veceshash = 10;
+const verificarAdmin = require('../verificarAdmin');
 
 function actualizarToken(usuario, res) {
     const token = jwt.sign({ usuario }, secret, { expiresIn: '8h' });
-
     const sql = 'INSERT INTO Usuarios (usuario, token) VALUES (?, ?) ON DUPLICATE KEY UPDATE token = VALUES(token)';
-
-    conexion.query(sql, [usuario, token], function(error, result) {
+    conexion.query(sql, [usuario, token], function(error) {
         if (error) {
             console.error(error);
             return res.send('Ocurrió un error al insertar el token.');
         }
-
-        return res.send({ success: true, token });
+        res.send({ token }); 
     });
 }
 
 router.post('/registrar', function (req, res) {
     const { nombre, apellido, password, mail, usuario } = req.body;
     const sql = 'INSERT INTO Usuarios (nombre, apellido, contrasena, mail, usuario) VALUES (?,?,?,?,?)';
-
-
     const hash = bcrypt.hashSync(password, veceshash);
 
     conexion.query(sql, [nombre, apellido, hash, mail, usuario], function (error, result) {
         if (error) {
             console.log(error);
-            return res.send('ocurrio un error');
+            return res.send('Ocurrió un error');
         }
-        // Obtener el ID generado
         const userId = result.insertId;
-        res.json({ status: 'ok', userId, token: actualizarToken(usuario) });  // Enviar el ID y token al frontend
+        const token = actualizarToken(usuario);
+
+        res.json({ status: 'ok', userId, token });
     });
 });
 
@@ -52,15 +49,10 @@ router.post('/login', function (req, res) {
 
         const hashedPassword = results[0].contrasena;
         const adminVerificacion = results[0].admin;
-        const nombreUsuario = results[0].nombre;  // Obtener el nombre del usuario
-        
-        if (bcrypt.compareSync(password, hashedPassword)) {
-            const token = generateToken(usuario);
-            if (!token) {
-                console.log("Existe un token");
-            }
+        const nombreUsuario = results[0].nombre;
 
-            // Devolver el token, la verificación de admin, y el nombre del usuario
+        if (bcrypt.compareSync(password, hashedPassword)) {
+            const token = jwt.sign({ usuario }, secret, { expiresIn: '8h' });
             res.json({ status: 'ok', token, adminVerificacion, usuario: nombreUsuario });
         } else {
             res.status(401).send('Contraseña incorrecta');
@@ -68,9 +60,8 @@ router.post('/login', function (req, res) {
     });
 });
 
-// Obtener todos los usuarios
-router.get('/usuarios', function (req, res) {
-    const sql = 'SELECT id, nombre, apellido, contrasena, admin, mail, usuario FROM Usuarios';
+router.get('/usuarios', verificarAdmin, function (req, res) {
+    const sql = 'SELECT id, nombre, apellido, admin, mail, usuario FROM Usuarios';
     conexion.query(sql, function (error, results) {
         if (error) {
             console.log(error);
@@ -80,7 +71,7 @@ router.get('/usuarios', function (req, res) {
     });
 });
 
-router.delete('/usuarios/:id', function (req, res) {
+router.delete('/usuarios/:id', verificarAdmin, function (req, res) {
     const { id } = req.params;
     const sql = 'DELETE FROM Usuarios WHERE id = ?';
     conexion.query(sql, [id], function (error, result) {
