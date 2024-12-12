@@ -7,71 +7,75 @@ const path = require('path');
 
 // Configuración de Multer
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, './public/images/'),
-    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+  destination: (req, file, cb) => cb(null, './public/images/'),
+  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
 
 const upload = multer({ storage });
 
 // Obtener todas las categorías
 router.get('/categorias', verificarAdmin, (req, res) => {
-    const sql = 'SELECT * FROM Categorias';
-    conexion.query(sql, (error, resultados) => {
-        if (error) {
-            console.log(error);
-            return res.status(500).json({ error: 'Error al obtener las categorías' });
-        }
-        res.json({ status: 'ok', categorias: resultados });
-    });
+  const sql = 'SELECT * FROM Categorias';
+  conexion.query(sql, (error, resultados) => {
+    if (error) {
+      console.log(error);
+      return res.status(500).json({ error: 'Error al obtener las categorías' });
+    }
+    res.json({ status: 'ok', categorias: resultados });
+  });
 });
 
 // Crear un producto
 router.post('/productos', verificarAdmin, upload.array('imagen', 3), (req, res) => {
-    const { nombre, stock, precio, descrip, marca, categoria } = req.body;
+  const { nombre, stock, precio, descrip, marca, categoria } = req.body;
 
-    const validarCategoriaSQL = 'SELECT COUNT(*) as count FROM Categorias WHERE id = ?';
-    conexion.query(validarCategoriaSQL, [categoria], (err, result) => {
-        if (err) return res.status(500).send('Error validando la categoría');
-        if (result[0].count === 0) return res.status(400).send('Categoría no válida');
+  // Validar la categoría
+  const validarCategoriaSQL = 'SELECT COUNT(*) as count FROM Categorias WHERE id = ?';
+  conexion.query(validarCategoriaSQL, [categoria], (err, result) => {
+    if (err) return res.status(500).send('Error validando la categoría');
+    if (result[0].count === 0) return res.status(400).send('Categoría no válida');
 
-        const sql = 'INSERT INTO Productos (nombre, stock, precio, descripcion, marca) VALUES (?,?,?,?,?)';
-        conexion.query(sql, [nombre, stock, precio, descrip, marca], (error, resultado) => {
-            if (error) return res.status(500).send('Error al crear producto');
+    // Insertar el producto en la tabla Productos
+    const sql = 'INSERT INTO Productos (nombre, stock, precio, descripcion, marca) VALUES (?,?,?,?,?)';
+    conexion.query(sql, [nombre, stock, precio, descrip, marca], (error, resultado) => {
+      if (error) return res.status(500).send('Error al crear producto');
 
-            const productId = resultado.insertId;
-            const sqlProdCat = 'INSERT INTO ProdCat (id_producto, id_categoria) VALUES (?, ?)';
-            conexion.query(sqlProdCat, [productId, categoria], (errorProdCat) => {
-                if (errorProdCat) return res.status(500).send('Error al asociar producto con categoría');
+      const productId = resultado.insertId;
+      const sqlProdCat = 'INSERT INTO ProdCat (id_producto, id_categoria) VALUES (?, ?)';
+      conexion.query(sqlProdCat, [productId, categoria], (errorProdCat) => {
+        if (errorProdCat) return res.status(500).send('Error al asociar producto con categoría');
 
-                if (req.files && req.files.length > 0) {
-                    const sqlImg = "INSERT INTO Imagenes (id_producto, url) VALUES (?,?)";
-                    const imagenesSubidas = req.files.map(file => ({
-                        productId: productId,
-                        imagenUrl: file.filename
-                    }));
+        // Guardar las imágenes
+        if (req.files && req.files.length > 0) {
+          const sqlImg = "INSERT INTO Imagenes (id_producto, url) VALUES (?,?)";
+          const imagenesSubidas = req.files.map(file => ({
+            productId: productId,
+            imagenUrl: file.filename
+          }));
 
-                    const promises = imagenesSubidas.map(imagen =>
-                        new Promise((resolve, reject) => {
-                            conexion.query(sqlImg, [imagen.productId, imagen.imagenUrl], (err) => {
-                                if (err) return reject(err);
-                                resolve();
-                            });
-                        })
-                    );
+          // Guardar las imágenes en la base de datos
+          const promises = imagenesSubidas.map(imagen =>
+            new Promise((resolve, reject) => {
+              conexion.query(sqlImg, [imagen.productId, imagen.imagenUrl], (err) => {
+                if (err) return reject(err);
+                resolve();
+              });
+            })
+          );
 
-                    Promise.all(promises)
-                        .then(() => res.status(201).json({
-                            message: 'Producto e imágenes creadas con éxito',
-                            productId: productId,
-                            imagenes: imagenesSubidas.map(imagen => imagen.imagenUrl)
-                        }))
-                        .catch(err => res.status(500).json({ error: 'Error al guardar las imágenes' }));
-                } else {
-                    res.status(201).json({ message: 'Producto creado sin imágenes', productId: productId });
-                }
-            });
-        });
+          Promise.all(promises)
+            .then(() => res.status(201).json({
+              message: 'Producto e imágenes creadas con éxito',
+              productId: productId,
+              imagenes: imagenesSubidas.map(imagen => imagen.imagenUrl)
+            }))
+            .catch(err => res.status(500).json({ error: 'Error al guardar las imágenes' }));
+        } else {
+          res.status(201).json({ message: 'Producto creado sin imágenes', productId: productId });
+        }
+      });
     });
+  });
 });
 
 // Obtener un producto por ID con imágenes
