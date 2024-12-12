@@ -4,20 +4,18 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 
-// Configuración de Multer
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, './public/images/'); // Ruta para guardar las imágenes
+        cb(null, './public/images/'); 
     },
     filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname); // Nombre único para las imágenes
+        cb(null, Date.now() + '-' + file.originalname); 
     }
 });
 
-const upload = multer({ storage: storage }); // Middleware de multer
+const upload = multer({ storage: storage });
 
 
-// crear un producto
 router.post('/productos', upload.array('imagen', 3), function (req, res) {
     const { nombre, stock, precio, descrip, marca, categoria } = req.body;
 
@@ -30,11 +28,9 @@ router.post('/productos', upload.array('imagen', 3), function (req, res) {
     if (result[0].count === 0) {
         return res.status(400).send('Categoría no válida');
     }
-    // Proceder con la inserción...
     });
 
   
-    // Inserción de producto en la base de datos
     const sql = 'INSERT INTO Productos (nombre, stock, precio, descripcion, marca) VALUES (?,?,?,?,?)';
     conexion.query(sql, [nombre, stock, precio, descrip, marca], function (error, resultado) {
       if (error) {
@@ -43,7 +39,6 @@ router.post('/productos', upload.array('imagen', 3), function (req, res) {
       }
       const productId = resultado.insertId;
   
-      // Insertar en la tabla ProdCat para asociar el producto con la categoría
       const sqlProdCat = 'INSERT INTO ProdCat (id_producto, id_categoria) VALUES (?, ?)';
       conexion.query(sqlProdCat, [productId, categoria], function (error, resultadoProdCat) {
         if (error) {
@@ -86,7 +81,6 @@ router.post('/productos', upload.array('imagen', 3), function (req, res) {
     });
   });  
 
-// Obtener un producto por ID con imágenes
 router.get('/productos/:id', function (req, res) {
     const { id } = req.params;
 
@@ -121,7 +115,6 @@ router.get('/productos/:id', function (req, res) {
     });
 });
 
-// Obtener todos los productos con sus categorías
 router.get('/productos', function (req, res) {
     const sql = `
         SELECT p.*, c.nombre AS categoria
@@ -141,7 +134,6 @@ router.get('/productos', function (req, res) {
 
 
 
-// Actualizar un producto
 router.put('/productos', function (req, res) {
     const { id, nuevonombre, stock, precio, descripcion, marca } = req.body;
     const sql = "UPDATE Productos SET nombre = ?, stock = ?, precio = ?, descripcion = ?, marca = ? WHERE id = ?";
@@ -228,11 +220,9 @@ router.get('/ventas', (req, res) => {
     });
 });
 
-// Eliminar un producto
 router.delete('/productos/:id', (req, res) => {
     const { id } = req.params;
 
-    // Verificar si el producto existe antes de intentar eliminar
     const checkProductSQL = 'SELECT * FROM Productos WHERE id = ?';
     conexion.query(checkProductSQL, [id], (err, result) => {
         if (err) {
@@ -243,7 +233,6 @@ router.delete('/productos/:id', (req, res) => {
             return res.status(404).send('Producto no encontrado');
         }
 
-        // Obtener las imágenes asociadas al producto para eliminarlas físicamente
         const getImagesSQL = 'SELECT url FROM Imagenes WHERE id_producto = ?';
         conexion.query(getImagesSQL, [id], (err, images) => {
             if (err) {
@@ -251,7 +240,6 @@ router.delete('/productos/:id', (req, res) => {
                 return res.status(500).send('Error al obtener imágenes');
             }
 
-            // Eliminar las imágenes físicas
             images.forEach(image => {
                 const imagePath = path.join(__dirname, '../../public/images/', image.url);  // Ruta completa a la imagen
                 fs.unlink(imagePath, (err) => {
@@ -262,13 +250,10 @@ router.delete('/productos/:id', (req, res) => {
                     }
                 });
             });
-
-            // Inicia eliminación de imágenes, relaciones y producto
             const deleteImagesSQL = 'DELETE FROM Imagenes WHERE id_producto = ?';
             const deleteRelationsSQL = 'DELETE FROM ProdCat WHERE id_producto = ?';
             const deleteProductSQL = 'DELETE FROM Productos WHERE id = ?';
 
-            // Realiza las consultas de eliminación
             conexion.query(deleteImagesSQL, [id], (err) => {
                 if (err) {
                     console.error('Error eliminando imágenes:', err);
@@ -287,7 +272,6 @@ router.delete('/productos/:id', (req, res) => {
                             return res.status(500).send('Error interno al eliminar producto');
                         }
 
-                        // Respuesta exitosa
                         res.status(200).json({ message: 'Producto eliminado con éxito' });
                     });
                 });

@@ -2,9 +2,9 @@ const router = require('express').Router();
 const jwt = require('jsonwebtoken');
 const { conexion } = require('../../conexion');
 const bcrypt = require('bcrypt');
-const secret = '234u3i49kkfdsi8732934'; // Considera mover esto a un archivo de configuración
+const secret = '234u3i49kkfdsi8732934'; 
 const veceshash = 10;
-const verificarAdmin = require('../verificarAdmin'); // Middleware para verificar si el usuario es admin
+const verificarAdmin = require('../verificarAdmin'); 
 
 function actualizarToken(usuario) {
     const token = jwt.sign({ usuario }, secret, { expiresIn: '8h' });
@@ -14,7 +14,6 @@ function actualizarToken(usuario) {
         if (error) {
             console.error('Error al insertar el token:', error);
         } else {
-            // Si la operación es exitosa, realiza una solicitud HTTP con Axios
             axios.post('http://localhost:4000/api/guardar-token', { usuario, token })
                 .then(response => {
                     console.log('Token guardado con éxito:', response.data);
