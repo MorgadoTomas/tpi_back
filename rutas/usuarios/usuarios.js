@@ -7,17 +7,22 @@ const veceshash = 10;
 const verificarAdmin = require('../verificarAdmin'); // Middleware para verificar si el usuario es admin
 
 function actualizarToken(usuario) {
-    return new Promise((resolve, reject) => {
-        const token = jwt.sign({ usuario }, secret, { expiresIn: '8h' });
-        const sql = 'INSERT INTO Usuarios (usuario, token) VALUES (?, ?) ON DUPLICATE KEY UPDATE token = VALUES(token)';
-        
-        conexion.query(sql, [usuario, token], function(error) {
-            if (error) {
-                reject('Ocurrió un error al insertar el token.');
-            } else {
-                resolve(token); // Resuelve con el token generado
-            }
-        });
+    const token = jwt.sign({ usuario }, secret, { expiresIn: '8h' });
+    const sql = 'INSERT INTO Usuarios (usuario, token) VALUES (?, ?) ON DUPLICATE KEY UPDATE token = VALUES(token)';
+    
+    conexion.query(sql, [usuario, token], function(error) {
+        if (error) {
+            console.error('Error al insertar el token:', error);
+        } else {
+            // Si la operación es exitosa, realiza una solicitud HTTP con Axios
+            axios.post('http://localhost:4000/api/guardar-token', { usuario, token })
+                .then(response => {
+                    console.log('Token guardado con éxito:', response.data);
+                })
+                .catch(err => {
+                    console.error('Error al guardar el token:', err);
+                });
+        }
     });
 }
 
