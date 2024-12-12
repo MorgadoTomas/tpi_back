@@ -88,15 +88,4 @@ router.get('/usuarios', verificarAdmin, (req, res) => {
     });
 });
 
-router.delete('/usuarios/:id', verificarAdmin, (req, res) => {
-    const { id } = req.params;
-    const sql = 'DELETE FROM Usuarios WHERE id = ?';
-    conexion.query(sql, [id], (error) => {
-        if (error) {
-            return res.status(500).send('Ocurrió un error al eliminar el usuario');
-        }
-        res.json({ status: 'Usuario eliminado' });
-    });
-});
-
 module.exports = router;
