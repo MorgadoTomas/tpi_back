@@ -1,22 +1,23 @@
-const jwt = require('jsonwebtoken'); 
+const jwt = require('jsonwebtoken');
 const secret = '234u3i49kkfdsi8732934';
 const { conexion } = require('../conexion');
 
 const verificarAdmin = (req, res, next) => {
   const token = req.headers['authorization']?.split(' ')[1];
-  console.log('Token recibido:', token);
 
   if (!token) {
-    return res.status(401).json({ message: 'No token provided' });
+    return res.status(401).json({ message: 'No token provided. Please log in again.' });
   }
 
   try {
     const decoded = jwt.verify(token, secret);
-    console.log('Token decodificado:', decoded);
-    
-    const usuario = decoded.usuario;
+
+    // Solo para depuración, recuerda eliminar esto en producción
+    console.log('Datos decodificados del token:', decoded);
+    console.log("token es: ", token);
+
+    const usuario = decoded.usuario;  // El nombre de usuario del token
     const query = 'SELECT admin FROM Usuarios WHERE usuario = ?';
-    console.log('Usuario que se verifica:', usuario);
 
     conexion.query(query, [usuario], (error, results) => {
       if (error) {
@@ -26,10 +27,11 @@ const verificarAdmin = (req, res, next) => {
 
       if (results.length > 0) {
         const isAdmin = results[0].admin;
+        const ADMIN_ROLE = 1;
+        const USER_ROLE = 0;
 
-   
-        if (isAdmin === 1) {
-          return next(); 
+        if (isAdmin === ADMIN_ROLE) {
+          return next(); // Si es admin, pasa al siguiente middleware
         } else {
           return res.status(403).json({ message: 'No tienes permisos de administrador' });
         }
@@ -37,10 +39,10 @@ const verificarAdmin = (req, res, next) => {
         return res.status(404).json({ message: 'Usuario no encontrado' });
       }
     });
-    
+
   } catch (error) {
     console.error('Error al verificar el token:', error);
-    return res.status(401).json({ message: 'Token no válido' });
+    return res.status(401).json({ message: 'Token inválido o expirado. Por favor, inicia sesión nuevamente.' });
   }
 };
 

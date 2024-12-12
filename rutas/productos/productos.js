@@ -3,6 +3,7 @@ const { conexion } = require('../../conexion');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const verificarAdmin = require('../verificarAdmin');
 
 // Configuración de Multer
 const storage = multer.diskStorage({
@@ -16,78 +17,91 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage }); // Middleware de multer
 
+// Obtener todas las categorías
+router.get('/categorias', verificarAdmin, function (req, res) {
+    const sql = 'SELECT * FROM Categorias';
 
-// crear un producto
-router.post('/productos', upload.array('imagen', 3), function (req, res) {
+    conexion.query(sql, function (error, resultados) {
+        if (error) {
+            console.log(error);
+            return res.status(500).json({ error: 'Error al obtener las categorías' });
+        }
+
+        res.json({
+            status: 'ok',
+            categorias: resultados
+        });
+    });
+});
+
+// Crear un producto
+router.post('/productos', verificarAdmin, upload.array('imagen', 3), function (req, res) {
     const { nombre, stock, precio, descrip, marca, categoria } = req.body;
 
     const validarCategoriaSQL = 'SELECT COUNT(*) as count FROM Categorias WHERE id = ?';
     conexion.query(validarCategoriaSQL, [categoria], (err, result) => {
-    if (err) {
-        console.log(err);
-        return res.status(500).send('Error validando la categoría');
-    }
-    if (result[0].count === 0) {
-        return res.status(400).send('Categoría no válida');
-    }
-    // Proceder con la inserción...
-    });
+        if (err) {
+            console.log(err);
+            return res.status(500).send('Error validando la categoría');
+        }
+        if (result[0].count === 0) {
+            return res.status(400).send('Categoría no válida');
+        }
+        // Proceder con la inserción...
+        const sql = 'INSERT INTO Productos (nombre, stock, precio, descripcion, marca) VALUES (?,?,?,?,?)';
+        conexion.query(sql, [nombre, stock, precio, descrip, marca], function (error, resultado) {
+            if (error) {
+                console.log(error);
+                return res.status(500).send('Error en el post');
+            }
+            const productId = resultado.insertId;
 
-  
-    // Inserción de producto en la base de datos
-    const sql = 'INSERT INTO Productos (nombre, stock, precio, descripcion, marca) VALUES (?,?,?,?,?)';
-    conexion.query(sql, [nombre, stock, precio, descrip, marca], function (error, resultado) {
-      if (error) {
-        console.log(error);
-        return res.status(500).send('Error en el post');
-      }
-      const productId = resultado.insertId;
-  
-      // Insertar en la tabla ProdCat para asociar el producto con la categoría
-      const sqlProdCat = 'INSERT INTO ProdCat (id_producto, id_categoria) VALUES (?, ?)';
-      conexion.query(sqlProdCat, [productId, categoria], function (error, resultadoProdCat) {
-        if (error) {
-          console.log(error);
-          return res.status(500).send('Error al asociar producto con categoría');
-        }
-  
-        const sqlImg = "INSERT INTO Imagenes (id_producto, url) VALUES (?,?)";
-  
-        if (req.files && req.files.length > 0) {
-          const imagenesSubidas = req.files.map(file => ({
-            productId: productId,
-            imagenUrl: file.filename
-          }));
-  
-          const promises = imagenesSubidas.map(imagen => {
-            return new Promise((resolve, reject) => {
-              conexion.query(sqlImg, [imagen.productId, imagen.imagenUrl], (err, result) => {
-                if (err) return reject(err);
-                resolve(result);
-              });
+            // Insertar en la tabla ProdCat para asociar el producto con la categoría
+            const sqlProdCat = 'INSERT INTO ProdCat (id_producto, id_categoria) VALUES (?, ?)';
+            conexion.query(sqlProdCat, [productId, categoria], function (error, resultadoProdCat) {
+                if (error) {
+                    console.log(error);
+                    return res.status(500).send('Error al asociar producto con categoría');
+                }
+
+                const sqlImg = "INSERT INTO Imagenes (id_producto, url) VALUES (?,?)";
+
+                if (req.files && req.files.length > 0) {
+                    const imagenesSubidas = req.files.map(file => ({
+                        productId: productId,
+                        imagenUrl: file.filename
+                    }));
+
+                    const promises = imagenesSubidas.map(imagen => {
+                        return new Promise((resolve, reject) => {
+                            conexion.query(sqlImg, [imagen.productId, imagen.imagenUrl], (err, result) => {
+                                if (err) return reject(err);
+                                resolve(result);
+                            });
+                        });
+                    });
+
+                    Promise.all(promises)
+                        .then(() => {
+                            res.status(201).json({
+                                message: 'Producto e imágenes creadas con éxito',
+                                productId: productId,
+                                imagenes: imagenesSubidas.map(imagen => imagen.imagenUrl)
+                            });
+                        })
+                        .catch(err => {
+                            res.status(500).json({ error: 'Error al guardar las imágenes: ' + err.message });
+                        });
+                } else {
+                    res.status(201).json({ message: 'Producto creado sin imágenes', productId: productId });
+                }
             });
-          });
-  
-          Promise.all(promises)
-            .then(() => {
-              res.status(201).json({
-                message: 'Producto e imágenes creadas con éxito',
-                productId: productId,
-                imagenes: imagenesSubidas.map(imagen => imagen.imagenUrl)
-              });
-            })
-            .catch(err => {
-              res.status(500).json({ error: 'Error al guardar las imágenes: ' + err.message });
-            });
-        } else {
-          res.status(201).json({ message: 'Producto creado sin imágenes', productId: productId });
-        }
-      });
+        });
     });
-  });  
+});
 
 // Obtener un producto por ID con imágenes
-router.get('/productos/:id', function (req, res) {
+router.get('/productos/:id', verificarAdmin, function (req, res) {
     const { id } = req.params;
 
     const sqlProducto = 'SELECT * FROM Productos WHERE id = ?';
@@ -111,18 +125,18 @@ router.get('/productos/:id', function (req, res) {
                 return res.status(500).json({ error: 'Error al obtener las imágenes del producto' });
             }
 
-            res.json({ 
-                producto: { 
-                    ...producto, 
-                    imagenes: imagenes.map((img) => img.url) 
-                } 
+            res.json({
+                producto: {
+                    ...producto,
+                    imagenes: imagenes.map((img) => img.url)
+                }
             });
         });
     });
 });
 
 // Obtener todos los productos con sus categorías
-router.get('/productos', function (req, res) {
+router.get('/productos', verificarAdmin, function (req, res) {
     const sql = `
         SELECT p.*, c.nombre AS categoria
         FROM Productos p
@@ -139,16 +153,15 @@ router.get('/productos', function (req, res) {
     });
 });
 
-
 // Actualizar un producto, categoría e imagen
-router.put('/productos', function (req, res) {
-    const { 
-        id, 
-        nuevonombre, 
-        stock, 
-        precio, 
-        descripcion, 
-        marca, 
+router.put('/productos', verificarAdmin, function (req, res) {
+    const {
+        id,
+        nuevonombre,
+        stock,
+        precio,
+        descripcion,
+        marca,
         nuevaCategoriaId, // Nuevo ID de categoría (si aplica)
         nuevaImagenUrl // Nueva URL de imagen (si aplica)
     } = req.body;
@@ -188,83 +201,8 @@ router.put('/productos', function (req, res) {
     });
 });
 
-
-router.put('/carrito', function (req, res) {
-    const {stock, id} = req.body;
-    const sql = "UPDATE Productos SET stock = stock - ? WHERE id = ?";
-    conexion.query(sql, [stock, id], function (error, resultado) {
-        if (error) {
-            console.log(error)
-            return res.send('Error en el put')
-        }
-        res.json({ status: 'ok, modificacion completa' })
-    })
-})
-
-router.post('/carrito', (req, res) => {
-    const { id_usuario, id_met_de_pago, direccion, total } = req.body;
-
-    const sql = `
-        INSERT INTO Compras (id_usuario, id_met_de_pago, direccion, total)
-        VALUES (?, ?, ?, ?)
-    `;
-
-    conexion.query(sql, [id_usuario, id_met_de_pago, direccion, total], (err, result) => {
-        if (err) {
-            console.error('Error al registrar la compra:', err);
-            return res.status(500).json({ error: 'Error al registrar la compra' });
-        }
-
-        res.status(201).json({ compraId: result.insertId });
-    });
-});
-
-router.post('/carrito/detalle', (req, res) => {
-    const { id_compra, id_producto, cantidad, precio_u } = req.body;
-
-    const sql = `
-        INSERT INTO Detalledecompra (id_compra, id_producto, cantidad, precio_u)
-        VALUES (?, ?, ?, ?)
-    `;
-
-    conexion.query(sql, [id_compra, id_producto, cantidad, precio_u], (err) => {
-        if (err) {
-            console.error('Error al insertar detalle de compra:', err);
-            return res.status(500).json({ error: 'Error al insertar detalle de compra' });
-        }
-        res.status(201).json({ message: 'Detalle registrado correctamente' });
-    });
-});
-
-router.get('/ventas', (req, res) => {
-    const sql = `
-        SELECT 
-            c.id AS compraId, 
-            c.total, 
-            c.direccion, 
-            u.nombre AS usuario, 
-            m.tipo_de_pago AS metodoPago, 
-            p.nombre AS producto, 
-            dc.cantidad, 
-            dc.precio_u 
-        FROM Compras c
-        INNER JOIN Usuarios u ON c.id_usuario = u.id
-        INNER JOIN Metododepago m ON c.id_met_de_pago = m.id
-        INNER JOIN Detalledecompra dc ON c.id = dc.id_compra
-        INNER JOIN Productos p ON dc.id_producto = p.id;
-    `;
-
-    conexion.query(sql, (err, results) => {
-        if (err) {
-            console.error('Error al obtener las ventas:', err);
-            return res.status(500).json({ error: 'Error al obtener las ventas' });
-        }
-        res.json(results);
-    });
-});
-
 // Eliminar un producto
-router.delete('/productos/:id', (req, res) => {
+router.delete('/productos/:id', verificarAdmin, (req, res) => {
     const { id } = req.params;
 
     // Verificar si el producto existe antes de intentar eliminar
@@ -312,18 +250,17 @@ router.delete('/productos/:id', (req, res) => {
 
                 conexion.query(deleteRelationsSQL, [id], (err) => {
                     if (err) {
-                        console.error('Error eliminando relaciones:', err);
-                        return res.status(500).send('Error interno al eliminar relaciones');
+                        console.error('Error eliminando relación de categoría:', err);
+                        return res.status(500).send('Error al eliminar relación de categoría');
                     }
 
                     conexion.query(deleteProductSQL, [id], (err) => {
                         if (err) {
                             console.error('Error eliminando producto:', err);
-                            return res.status(500).send('Error interno al eliminar producto');
+                            return res.status(500).send('Error al eliminar producto');
                         }
 
-                        // Respuesta exitosa
-                        res.status(200).json({ message: 'Producto eliminado con éxito' });
+                        res.send('Producto y datos asociados eliminados correctamente');
                     });
                 });
             });

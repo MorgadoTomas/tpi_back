@@ -2,19 +2,23 @@ const router = require('express').Router();
 const jwt = require('jsonwebtoken');
 const { conexion } = require('../../conexion');
 const bcrypt = require('bcrypt');
-const secret = '234u3i49kkfdsi8732934';
+const secret = '234u3i49kkfdsi8732934'; // Considera mover esto a un archivo de configuración
 const veceshash = 10;
-const verificarAdmin = require('../verificarAdmin');
+const verificarAdmin = require('../verificarAdmin'); // Middleware para verificar si el usuario es admin
 
-function actualizarToken(usuario, res) {
-    const token = jwt.sign({ usuario }, secret, { expiresIn: '8h' });
-    const sql = 'INSERT INTO Usuarios (usuario, token) VALUES (?, ?) ON DUPLICATE KEY UPDATE token = VALUES(token)';
-    conexion.query(sql, [usuario, token], function(error) {
-        if (error) {
-            console.error(error);
-            return res.send('Ocurrió un error al insertar el token.');
-        }
-        res.send({ token }); 
+function actualizarToken(usuario) {
+    return new Promise((resolve, reject) => {
+        const token = jwt.sign({ usuario }, secret, { expiresIn: '8h' });
+        const sql = 'INSERT INTO Usuarios (usuario, token) VALUES (?, ?) ON DUPLICATE KEY UPDATE token = VALUES(token)';
+        
+        conexion.query(sql, [usuario, token], function(error) {
+            if (error) {
+                console.error(error);
+                reject('Ocurrió un error al insertar el token.');
+            } else {
+                resolve(token); // Resuelve con el token generado
+            }
+        });
     });
 }
 
@@ -29,9 +33,13 @@ router.post('/registrar', function (req, res) {
             return res.send('Ocurrió un error');
         }
         const userId = result.insertId;
-        const token = actualizarToken(usuario);
 
-        res.json({ status: 'ok', userId, token });
+        // Usamos .then() para manejar el resultado de actualizarToken
+        actualizarToken(usuario).then(token => {
+            res.json({ status: 'ok', userId, token });
+        }).catch(error => {
+            res.status(500).send(error); // Manejo de error si no se puede generar el token
+        });
     });
 });
 
@@ -58,6 +66,35 @@ router.post('/login', function (req, res) {
             res.status(401).send('Contraseña incorrecta');
         }
     });
+});
+
+// Ruta para actualizar el rol de administrador de un usuario
+router.put('/admin/:userId', verificarAdmin, (req, res) => {
+  const userId = req.params.userId;  // Obtén el userId de los parámetros
+  const { admin } = req.body;  // Obtén el nuevo rol (admin) del cuerpo de la solicitud
+
+  // Validación de si el valor de admin es 1 (admin) o 0 (no admin)
+  if (admin !== 0 && admin !== 1) {
+    return res.status(400).json({ message: 'Valor de admin inválido. Debe ser 0 o 1.' });
+  }
+
+  // Consulta SQL para actualizar el rol del usuario en la base de datos
+  const query = 'UPDATE Usuarios SET admin = ? WHERE id = ?';
+
+  // Ejecutar la consulta
+  conexion.query(query, [admin, userId], (error, results) => {
+    if (error) {
+      console.error('Error al actualizar el rol:', error);
+      return res.status(500).json({ message: 'Error al actualizar el rol de usuario' });
+    }
+
+    // Verifica si se actualizó algún registro
+    if (results.affectedRows > 0) {
+      return res.status(200).json({ message: 'Rol actualizado correctamente' });
+    } else {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+  });
 });
 
 router.get('/usuarios', verificarAdmin, function (req, res) {
