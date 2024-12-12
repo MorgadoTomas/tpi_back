@@ -241,7 +241,7 @@ router.delete('/productos/:id', (req, res) => {
             }
 
             images.forEach(image => {
-                const imagePath = path.join(__dirname, '../../public/images/', image.url);  // Ruta completa a la imagen
+                const imagePath = path.join(__dirname, '../../public/images/', image.url); 
                 fs.unlink(imagePath, (err) => {
                     if (err) {
                         console.error('Error al eliminar imagen:', err);
