@@ -14,13 +14,13 @@ function actualizarToken(usuario) {
         if (error) {
             console.error('Error al insertar el token:', error);
         } else {
-            axios.post('http://localhost:4000/api/guardar-token', { usuario, token })
-                .then(response => {
-                    console.log('Token guardado con éxito:', response.data);
-                })
-                .catch(err => {
-                    console.error('Error al guardar el token:', err);
-                });
+            // axios.post('http://localhost:4000/api/guardar-token', { usuario, token })
+            //     .then(response => {
+            //         console.log('Token guardado con éxito:', response.data);
+            //     })
+            //     .catch(err => {
+            //         console.error('Error al guardar el token:', err);
+            //     });
         }
     });
 }
